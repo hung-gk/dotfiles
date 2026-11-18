@@ -40,6 +40,8 @@
     casks = [
       "wezterm"
       "claude-code"
+      "visual-studio-code"
+      "gcloud-cli"
     ];
   };
 }

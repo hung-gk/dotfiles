@@ -1,7 +1,21 @@
-{ config, pkgs, user, ... }:
+{ config, lib, pkgs, user, ... }:
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
+
+  # Installed with the Homebrew `code` CLI on every switch. Not done through
+  # nix-darwin's `homebrew.vscode` because `brew bundle` (seen on 6.0.1 and
+  # 7.0.11) fails to detect VS Code and aborts the whole activation.
+  vscodeExtensions = [
+    "anthropic.claude-code"
+    "atlassian.atlascode"
+    "dbtlabsinc.dbt"
+    "dracula-theme.theme-dracula"
+    "eamodio.gitlens"
+    "inferrinizzard.prettier-sql-vscode"
+    "redhat.vscode-yaml"
+    "trunk.io"
+  ];
 in
 
 {
@@ -60,6 +74,24 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
   home.file.".config/herdr".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/herdr";
+  home.file."Library/Application Support/Code/User/settings.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/vscode/settings.json";
+  home.file."Library/Application Support/Code/User/keybindings.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/vscode/keybindings.json";
+  home.activation.vscodeExtensions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    code=/opt/homebrew/bin/code
+    if [ -x "$code" ]; then
+      installed="$("$code" --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+      for ext in ${lib.escapeShellArgs vscodeExtensions}; do
+        if ! printf '%s\n' "$installed" | grep -qxF "$ext"; then
+          run "$code" --install-extension "$ext"
+        fi
+      done
+    else
+      echo "VS Code CLI not found at $code; skipping extensions (rerun ./rebuild.sh after Homebrew installs it)." >&2
+    fi
+  '';
+
   home.file.".claude/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
 
