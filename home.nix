@@ -29,7 +29,9 @@ in
     fzf       # fuzzy finder
     jq        # json on the command line
     lazygit
+    gh        # github cli
     neovim
+    uv        # python projects and tools
     # the font everything renders in
     nerd-fonts.hack
   ];
@@ -42,6 +44,15 @@ in
     syntaxHighlighting.enable = true;  # commands turn green when valid
     initContent = ''
       bindkey '^f' autosuggest-accept
+
+      # Run one command with Looker API credentials from the macOS Keychain,
+      # so the secret never sits in the shell env of every process.
+      with-looker() {
+        LOOKERSDK_BASE_URL="$(security find-generic-password -s looker-base-url -w)" \
+        LOOKERSDK_CLIENT_ID="$(security find-generic-password -s looker-client-id -w)" \
+        LOOKERSDK_CLIENT_SECRET="$(security find-generic-password -s looker-client-secret -w)" \
+        "$@"
+      }
     '';
     shellAliases = {
       ".." = "cd ..";

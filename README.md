@@ -24,10 +24,10 @@ If you find a bug, please open a GitHub Issue using the bug report template.
 Running the switch builds:
 
 - System settings (dark mode, key repeat, dock, Finder, trackpad)
-- Homebrew apps (casks and CLI tools)
-- Nix user packages (ripgrep, fd, fzf, jq, lazygit, Neovim, Hack Nerd Font)
-- Shell (zsh, aliases, starship prompt)
-- Editor (Neovim config with the rose-pine moon theme)
+- Homebrew apps (casks and CLI tools, including VS Code and the Google Cloud CLI)
+- Nix user packages (ripgrep, fd, fzf, jq, lazygit, gh, Neovim, uv, Hack Nerd Font)
+- Shell (zsh, aliases, starship prompt, `with-looker` helper)
+- Editors (Neovim config with the rose-pine moon theme; VS Code settings, keybindings and extensions)
 - Terminal (WezTerm config with the rose-pine moon theme and dimmed unfocused windows)
 - Agent configs (Claude, Codex, opencode all share one AGENTS.md)
 - Optional Pi theme and local extensions, generic UI settings and model overrides, plus two deliberately pinned third-party Pi packages
@@ -40,11 +40,18 @@ Running the switch builds:
 
 ## Fresh-machine setup
 
-On a brand new Mac, from a bare clone of this repo:
+A brand new Mac has no `git` yet.
+Install Apple's Command Line Tools first (a dialog opens; wait for it to finish):
 
 ```sh
-git clone https://github.com/kunchenguid/dotfiles.git
-cd dotfiles
+xcode-select --install
+```
+
+Then clone this repo over HTTPS (no SSH key needed yet, the repo is public):
+
+```sh
+git clone https://github.com/hung-gk/dotfiles.git ~/github/dotfiles
+cd ~/github/dotfiles
 ```
 
 Before you run it: review "Make it yours" below.
@@ -65,6 +72,81 @@ Change the host label or CPU architecture if needed, and read the Homebrew clean
    It fetches the `darwin-rebuild` tool from the nix-darwin 26.05 release branch, then applies this repo's locked flake config.
 
 After that, `darwin-rebuild` exists and you're on the normal workflow below.
+
+### Manual steps after bootstrap
+
+These hold secrets or company-internal values, so they deliberately live outside this public repo.
+Do them once per machine, after `bootstrap.sh` finishes and you open a new terminal.
+
+1. **VS Code extensions.**
+   If bootstrap printed "VS Code CLI not found ... skipping extensions", run `./rebuild.sh` once more to install them.
+
+2. **GitHub SSH key.**
+   Create a new key for this machine (do not copy keys between machines), add the public key to GitHub, then switch this repo to SSH:
+
+   ```sh
+   ssh-keygen -t ed25519 -C "<machine name>"
+   pbcopy < ~/.ssh/id_ed25519.pub   # paste at github.com/settings/keys
+   git remote set-url origin git@github.com:hung-gk/dotfiles.git
+   ```
+
+   Then sign in the GitHub CLI (choose SSH as the git protocol so it reuses this key):
+
+   ```sh
+   gh auth login
+   ```
+
+3. **Git identity.** This config does not set it (see "Make it yours"):
+
+   ```sh
+   git config --global user.name "Your Name"
+   git config --global user.email you@example.com
+   ```
+
+4. **Google Cloud login.** The second command creates the credentials that dbt's `oauth` method uses:
+
+   ```sh
+   gcloud auth login
+   gcloud auth application-default login
+   ```
+
+5. **dbt profile.** Create `~/.dbt/profiles.yml` by hand.
+   Keep a copy in your password manager or private notes, never in this repo:
+
+   ```yaml
+   dev:
+     target: dev
+     outputs:
+       dev:
+         type: bigquery
+         method: oauth
+         database: <gcp-project-id>
+         schema: dbt_<your-name>
+         location: US
+         threads: 8
+   ```
+
+6. **Looker API credentials.**
+   Get a Client ID and Client Secret from Looker (Admin > Users > your user > Edit Keys, or ask a Looker admin).
+   Store them and the instance URL in the macOS Keychain.
+   Each command prompts for the value, so nothing lands in shell history (add `-U` before `-w` to replace an existing value):
+
+   ```sh
+   security add-generic-password -a "$USER" -s looker-base-url -w       # e.g. https://<instance>.cloud.looker.com
+   security add-generic-password -a "$USER" -s looker-client-id -w
+   security add-generic-password -a "$USER" -s looker-client-secret -w
+   ```
+
+   Test it (click "Always Allow" when macOS asks about Keychain access); it prints your Looker display name:
+
+   ```sh
+   with-looker uv run --with looker-sdk python -c "import looker_sdk; print(looker_sdk.init40().me().display_name)"
+   ```
+
+   `with-looker` (defined in `home.nix`) passes the credentials only to the one command it runs, never to your whole shell.
+   In a project: `uv add looker-sdk`, then `with-looker uv run my_script.py`.
+
+7. **Sign in to the apps:** Claude Code (`claude`), and any VS Code extensions that need an account.
 
 ### Validate without applying
 
