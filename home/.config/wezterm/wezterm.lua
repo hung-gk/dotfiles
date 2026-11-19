@@ -2,8 +2,10 @@ local wezterm = require("wezterm")
 
 local config = wezterm.config_builder()
 
-config.color_scheme = "rose-pine-moon"
-config.font = wezterm.font("Hack Nerd Font")
+config.color_scheme = "Dracula (Official)"
+-- Installed alternatives to try: "IosevkaTerm Nerd Font Mono",
+-- "SauceCodePro Nerd Font Mono", "Hack Nerd Font"
+config.font = wezterm.font("JetBrainsMono Nerd Font Mono")
 config.font_size = 15.0
 config.window_background_opacity = 0.8
 config.macos_window_background_blur = 50

@@ -14,7 +14,6 @@ let
     "eamodio.gitlens"
     "inferrinizzard.prettier-sql-vscode"
     "redhat.vscode-yaml"
-    "trunk.io"
   ];
 in
 
@@ -34,6 +33,9 @@ in
     uv        # python projects and tools
     # the font everything renders in
     nerd-fonts.hack
+    nerd-fonts.jetbrains-mono
+    nerd-fonts.iosevka-term
+    nerd-fonts.sauce-code-pro
   ];
   fonts.fontconfig.enable = true;
   home.sessionVariables.EDITOR = "nvim";
